@@ -72,8 +72,7 @@ class State(rx.State):
 
     @rx.event
     def initialize_app(self):
-        """Initialize the database on app startup by logging instructions."""
-        init_db()
+        """Initialize the app by loading initial data."""
         return State.load_initial_data
 
     @rx.event
