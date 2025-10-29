@@ -178,6 +178,19 @@ def _tab_button(name: str, label: str) -> rx.Component:
     )
 
 
+def _db_error_message() -> rx.Component:
+    return rx.el.div(
+        rx.icon("flag_triangle_right", class_name="text-red-500"),
+        rx.el.h3("Error de Conexión con la Base de Datos", class_name="font-semibold"),
+        rx.el.p(State.db_error_message, class_name="text-sm text-gray-600"),
+        rx.el.p(
+            "Por favor, ejecuta el script de inicialización en tu editor de SQL de Supabase.",
+            class_name="text-sm font-medium mt-2",
+        ),
+        class_name="flex flex-col items-center gap-2 p-6 bg-red-50 border border-red-200 rounded-lg text-center",
+    )
+
+
 def configuracion_page() -> rx.Component:
     """The configuration page with tabs."""
     return main_layout(
@@ -189,27 +202,31 @@ def configuracion_page() -> rx.Component:
                 _tab_button("docs_enfriadores", "Docs. Enfriadores"),
                 class_name="flex items-center gap-2 p-2 bg-gray-100 rounded-lg mb-6",
             ),
-            rx.match(
-                State.active_config_tab,
-                (
-                    "clientes",
-                    _upload_section(
-                        "Cargar Datos de Clientes",
-                        "Sube un archivo Excel (.xlsx) con las columnas: numero_cliente, nombre, frecuencia_entrega, frecuencia_preventa.",
-                        State.handle_clientes_upload,
+            rx.cond(
+                State.db_initialized,
+                rx.match(
+                    State.active_config_tab,
+                    (
+                        "clientes",
+                        _upload_section(
+                            "Cargar Datos de Clientes",
+                            "Sube un archivo Excel (.xlsx) con las columnas: numero_cliente, nombre, frecuencia_entrega, frecuencia_preventa.",
+                            State.handle_clientes_upload,
+                        ),
                     ),
-                ),
-                (
-                    "enfriadores",
-                    _upload_section(
-                        "Cargar Datos de Enfriadores",
-                        "Sube un archivo Excel (.xlsx) con las columnas: canal, serie, modelo.",
-                        State.handle_enfriadores_upload,
+                    (
+                        "enfriadores",
+                        _upload_section(
+                            "Cargar Datos de Enfriadores",
+                            "Sube un archivo Excel (.xlsx) con las columnas: canal, serie, modelo.",
+                            State.handle_enfriadores_upload,
+                        ),
                     ),
+                    ("tramites", _configuracion_tramites()),
+                    ("docs_enfriadores", _configuracion_enfriadores()),
+                    rx.el.p("Selecciona una opción de configuración."),
                 ),
-                ("tramites", _configuracion_tramites()),
-                ("docs_enfriadores", _configuracion_enfriadores()),
-                rx.el.p("Selecciona una opción de configuración."),
+                _db_error_message(),
             ),
             class_name="w-full",
         )

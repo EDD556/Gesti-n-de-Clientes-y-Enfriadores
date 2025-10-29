@@ -48,6 +48,8 @@ class State(rx.State):
         {"name": "Trámites", "icon": "file-text", "route": "/tramites"},
     ]
     active_config_tab: str = "clientes"
+    db_initialized: bool = False
+    db_error_message: str = ""
     tipos_tramite: list[TipoTramite] = []
     selected_tipo_tramite_id: str = ""
     documentos_tramite: list[Documento] = []
@@ -159,6 +161,13 @@ class State(rx.State):
     async def load_tipos_tramite(self):
         try:
             client = get_db_client()
+            if not client:
+                async with self:
+                    self.db_initialized = False
+                    self.db_error_message = (
+                        "No se pudieron cargar las credenciales de Supabase."
+                    )
+                return
             response = (
                 client.table("tipos_tramite")
                 .select("id, nombre")
@@ -167,10 +176,15 @@ class State(rx.State):
             )
             async with self:
                 self.tipos_tramite = response.data
+                self.db_initialized = True
+                self.db_error_message = ""
         except Exception as e:
             logging.exception(f"Error al cargar tipos de trámite: {e}")
             async with self:
                 self.tipos_tramite = []
+                self.db_initialized = False
+                self.db_error_message = str(e)
+            return rx.toast.error("Error de red al cargar tipos de trámite.")
 
     @rx.event
     def add_documento_tramite(self, form_data: dict):
@@ -206,6 +220,8 @@ class State(rx.State):
             return
         try:
             client = get_db_client()
+            if not client:
+                return rx.toast.error("No se pudo conectar a la base de datos.")
             response = (
                 client.table("documentos_tramite")
                 .select("id, nombre_documento")
@@ -221,6 +237,7 @@ class State(rx.State):
                 }
         except Exception as e:
             logging.exception(f"Error al cargar documentos de trámite: {e}")
+            return rx.toast.error("Error de red al cargar documentos.")
 
     @rx.event
     def add_documento_enfriador(self, form_data: dict):
@@ -244,6 +261,8 @@ class State(rx.State):
     async def load_documentos_enfriadores(self):
         try:
             client = get_db_client()
+            if not client:
+                return rx.toast.error("No se pudo conectar a la base de datos.")
             response = (
                 client.table("documentos_enfriadores")
                 .select("id, nombre_documento")
@@ -256,6 +275,7 @@ class State(rx.State):
             logging.exception(f"Error al cargar documentos de enfriadores: {e}")
             async with self:
                 self.documentos_enfriadores = []
+            return rx.toast.error("Error de red al cargar documentos de enfriadores.")
 
     @rx.event(background=True)
     async def buscar_cliente(self):
@@ -265,6 +285,8 @@ class State(rx.State):
             return
         try:
             client = get_db_client()
+            if not client:
+                return rx.toast.error("No se pudo conectar a la base de datos.")
             response = (
                 client.table("clientes")
                 .select(
@@ -280,6 +302,7 @@ class State(rx.State):
             logging.exception(f"Error al buscar cliente: {e}")
             async with self:
                 self.new_tramite_cliente_data = None
+            return rx.toast.error("Error de red al buscar cliente.")
 
     @rx.event
     def toggle_documento_seleccionado(self, doc_id: str):
@@ -345,7 +368,7 @@ class State(rx.State):
             client = get_db_client()
             if not client:
                 logging.error("load_tramites: Database client is not available.")
-                return
+                return rx.toast.error("No se pudo conectar a la base de datos.")
             rpc_params = {}
             if self.filtro_estatus:
                 rpc_params["p_estatus"] = self.filtro_estatus
@@ -361,6 +384,7 @@ class State(rx.State):
             logging.exception(f"Error al cargar los trámites: {e}")
             async with self:
                 self.tramites = []
+            return rx.toast.error("Error de red al cargar trámites.")
 
     @rx.event
     def set_page(self, page: str):
