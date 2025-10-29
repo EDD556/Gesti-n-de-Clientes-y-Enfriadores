@@ -3,12 +3,18 @@ from supabase import create_client, Client
 import os
 import logging
 
-SUPABASE_URL = "https://jyzbjmnklwftdkdupkbh.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5emJqbW5rbHdmdGRrZHVwa2JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2NjM2MzgsImV4cCI6MjA3NzIzOTYzOH0.5KqcDDUgejnPVBSJeWR48hDB26jTbU-z4YmP9cPlPYE"
+SUPABASE_URL = os.getenv("SUPABASE_URL", "https://jyzbjmnklwftdkdupkbh.supabase.co")
+SUPABASE_KEY = os.getenv(
+    "SUPABASE_KEY",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5emJqbW5rbHdmdGRrZHVwa2JoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2NjM2MzgsImV4cCI6MjA3NzIzOTYzOH0.5KqcDDUgejnPVBSJeWR48hDB26jTbU-z4YmP9cPlPYE",
+)
 
 
 def get_db_client() -> Client | None:
     """Creates and returns a Supabase client, or None if connection fails."""
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        logging.error("Supabase URL or Key is not configured.")
+        return None
     try:
         return create_client(SUPABASE_URL, SUPABASE_KEY)
     except Exception as e:
